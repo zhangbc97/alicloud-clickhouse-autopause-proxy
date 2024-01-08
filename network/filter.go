@@ -3,6 +3,8 @@ package main
 import (
 	"log"
 	"net"
+	"sync"
+	"time"
 
 	xds "github.com/cncf/xds/go/xds/type/v3"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -14,6 +16,10 @@ import (
 func init() {
 	network.RegisterNetworkFilterConfigFactory("autopause_tcp", cf)
 }
+
+var globalLock = sync.Mutex{}
+
+var lastKeepAliveTime int64 = 0
 
 var cf = &configFactory{}
 
@@ -56,6 +62,18 @@ type downFilter struct {
 	cb       api.ConnectionCallback
 	upAddr   string
 	upFilter *upFilter
+}
+
+// 调用的时候判断，如果间隔小于5秒那就不调用，否则调用Clickhouse的Keepalive，注意并发加锁
+func KeepAlive() {
+	globalLock.Lock()
+	defer globalLock.Unlock()
+	if time.Now().Unix()-lastKeepAliveTime < 5 {
+		return
+	}
+	lastKeepAliveTime = time.Now().Unix()
+	// 调用Clickhouse的Keepalive
+
 }
 
 func (f *downFilter) OnNewConnection() api.FilterStatus {

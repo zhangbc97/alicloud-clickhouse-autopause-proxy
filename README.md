@@ -16,6 +16,9 @@
 
 本项目实现了两个Envoy的Filter，分别用于实现Clickhouse的TCP代理和HTTP代理。
 
+### 注意
+本项目尚未达到可用程度，请耐心等待
+
 ### TCP代理
 
 当新连接建立时，将会向alicloud-clickhouse-autopause服务发起KeepAlive请求，如果alicloud-clickhouse-autopause服务返回了需要启动实例的响应，则会阻塞当前连接，直到实例启动成功或者启动失败。
