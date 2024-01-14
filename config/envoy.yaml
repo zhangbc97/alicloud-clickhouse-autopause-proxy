@@ -41,7 +41,8 @@ static_resources:
                         "@type": type.googleapis.com/xds.type.v3.TypedStruct
                         value:
                           autopause_service: ""
-                          db_instance_id: ""
+                          region_id: "cn-beijing"
+                          instance_id: ""
                   - name: envoy.filters.http.router
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -69,4 +70,4 @@ static_resources:
                   address:
                     socket_address:
                       address: ""
-                      port_value: 80
+                      port_value: 8123

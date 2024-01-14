@@ -13,7 +13,7 @@ import (
 )
 
 // 最后一次请求时间戳(秒)
-var lastRequestTime int64 = 0
+var lastRequestTime time.Time = time.Now()
 
 type AutoPauseStreamFilter struct {
 	api.PassThroughStreamFilter
@@ -30,9 +30,11 @@ func (f *AutoPauseStreamFilter) ResponseError(statusCode int) api.StatusType {
 
 func (f *AutoPauseStreamFilter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.StatusType {
 	// 如果距离上次请求没超过5秒，直接返回
-	if lastRequestTime != 0 && lastRequestTime+5 > time.Now().Unix() {
+	if time.Since(lastRequestTime).Seconds() < 5 {
 		return api.Continue
 	}
+
+	log.Default().Println("Request KeepAlive: RegionID: ", f.config.RegionID, ", DBInstanceID: ", f.config.InstanceID)
 
 	conn, err := grpc.Dial(f.config.AutopauseService, grpc.WithTransportCredentials(insecure.NewCredentials()))
 
@@ -45,7 +47,7 @@ func (f *AutoPauseStreamFilter) DecodeHeaders(header api.RequestHeaderMap, endSt
 
 	client := pb.NewAliYunClickhouseClient(conn)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 
 	defer cancel()
 
@@ -57,8 +59,10 @@ func (f *AutoPauseStreamFilter) DecodeHeaders(header api.RequestHeaderMap, endSt
 	}
 
 	if !r.Success {
-		return f.ResponseError(499)
+		return f.ResponseError(503)
 	}
+
+	lastRequestTime = time.Now()
 
 	return api.Continue
 }
